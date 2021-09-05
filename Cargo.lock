@@ -88,6 +88,7 @@ dependencies = [
  "rtt_rs",
  "spi-flash",
  "stm32f7",
+ "stm32h7",
  "typenum",
  "vcell",
 ]
@@ -307,6 +308,17 @@ name = "stm32f7"
 version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "776fb8cd4dd0c5dc44f27bd8d0f02311901f49e5a78260a7205c75be6e3f0490"
+dependencies = [
+ "bare-metal",
+ "cortex-m",
+ "vcell",
+]
+
+[[package]]
+name = "stm32h7"
+version = "0.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8b672c837e0ee8158ecc7fce0f9a948dd0693a9c588338e728d14b73307a0b7d"
 dependencies = [
  "bare-metal",
  "cortex-m",
