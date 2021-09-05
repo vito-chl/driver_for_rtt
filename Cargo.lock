@@ -249,7 +249,7 @@ dependencies = [
 [[package]]
 name = "rtt_rs"
 version = "0.2.3"
-source = "git+https://gitee.com/vitors/rtt_rs.git#398a7117994d57e9745b0e4e17923eeb241a2011"
+source = "git+https://github.com/vito-chl/rtt_rs.git#f82f0d2f14522ce5136ab67da917f983544b99a6"
 dependencies = [
  "bitfield",
 ]
