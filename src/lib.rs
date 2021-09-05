@@ -51,7 +51,7 @@ lazy_static! {
 macro_rules! dev_init {
     ($func: ident) => {
         #[no_mangle]
-        pub extern "C" fn rust_device_init() -> () {
+        pub extern "C" fn rust_device_init() -> usize {
             $func();
         }
     };
