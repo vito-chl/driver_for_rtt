@@ -32,20 +32,20 @@ impl DeviceLed for BspLed {
         rb.otyper.modify(|_, w| w.ot8().push_pull());
         rb.ospeedr.modify(|_, w| w.ospeedr8().low_speed());
         rb.pupdr.modify(|_, w| w.pupdr8().pull_up());
-        rb.bsrr.write(|w| w.br8().set_bit());
+        rb.bsrr.write(|w| w.bs8().set_bit());
         Ok(())
     }
 
     fn on(&self) -> Result<(), LedError> {
         let rb = &DP.0.GPIOI;
-        rb.bsrr.write(|w| w.bs8().set_bit());
+        rb.bsrr.write(|w| w.br8().set_bit());
         self.0.borrow_mut().state = BspLedState::On;
         Ok(())
     }
 
     fn off(&self) -> Result<(), LedError> {
         let rb = &DP.0.GPIOI;
-        rb.bsrr.write(|w| w.br8().set_bit());
+        rb.bsrr.write(|w| w.bs8().set_bit());
         self.0.borrow_mut().state = BspLedState::Off;
         Ok(())
     }

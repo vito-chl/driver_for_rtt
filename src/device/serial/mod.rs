@@ -7,7 +7,8 @@ use crate::device::serial::bsp::{BspAsyncSerial, BspSerial};
 use crate::device::DeviceOps;
 use crate::IOError::WriteFull;
 use crate::{IOError, OpenFlag, StdData, ToMakeStdData};
-use alloc::collections::LinkedList;
+use alloc::collections::{LinkedList, VecDeque};
+use alloc::vec::Vec;
 use core::cell::Cell;
 use core::ops::Deref;
 use core::task::Waker;
@@ -148,7 +149,6 @@ where
 
     fn write(&self, data: &dyn ToMakeStdData) -> Result<(), IOError> {
         if self.flag.get().unwrap().get_write_block() {
-            // 阻塞的去写
             match data.make_data() {
                 StdData::Bytes(a) => {
                     for ch in a {
@@ -174,35 +174,39 @@ where
             }
             Ok(())
         } else {
-            // 使用buf来存储发送的数据
             return match data.make_data() {
-                StdData::Bytes(mut a) => no_irq(|| unsafe {
-                    let ret;
-                    let wb = self.dev.get_helper().w_buffer.get();
-                    for ch in 0..(*wb).free_len() {
-                        if let Some(ch) = a.pop() {
-                            (*wb).push(ch).unwrap();
+                StdData::Bytes(mut a) => {
+                    let mut ret = Ok(());
+                    if a.is_empty() {
+                        ret = Ok(())
+                    } else {
+                        let mut dq = VecDeque::from(a);
+                        no_irq(|| unsafe {
+                            let wb = self.dev.get_helper().w_buffer.get();
+                            if (*wb).empty() {
+                                while !self.dev.read_able().unwrap() {}
+                                self.dev.write_char(dq.pop_front().unwrap());
+                            }
+                            for ch in 0..(*wb).free_len() {
+                                if let Some(ch) = a.pop_front() {
+                                    (*wb).force_push(ch);
+                                } else {
+                                    break;
+                                }
+                            }
+                        });
+                        if !a.is_empty() {
+                            ret = Err(WriteFull(StdData::Bytes(Vec::from(dq))));
                         } else {
-                            break;
+                            ret = Ok(())
                         }
                     }
-                    if !a.is_empty() {
-                        ret = Err(WriteFull(StdData::Bytes(a)));
-                    } else {
-                        ret = Ok(())
-                    }
                     ret
-                }),
+                },
                 StdData::U32(b) => no_irq(|| unsafe {
-                    let ret;
-                    let wb = self.dev.get_helper().w_buffer.get();
-                    if (*wb).full() {
-                        ret = Err(IOError::WriteFull(StdData::U32(b)))
-                    } else {
-                        (*wb).push(b as u8).unwrap();
-                        ret = Ok(())
-                    }
-                    ret
+                    while !self.dev.read_able().unwrap() {}
+                    self.dev.write_char(first_char);
+                    Ok(())
                 }),
                 _ => Err(IOError::WriteError),
             };
