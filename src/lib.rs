@@ -49,6 +49,7 @@ macro_rules! dev_init {
         #[no_mangle]
         pub extern "C" fn rust_device_init() -> usize {
             $func();
+            0
         }
     };
 }
