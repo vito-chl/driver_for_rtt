@@ -25,26 +25,29 @@ impl BspLed {
 
 impl DeviceLed for BspLed {
     fn init(&self) -> Result<(), LedError> {
-        let rcc = &DP.0.RCC;
-        rcc.ahb1enr.modify(|_, w| w.gpioien().set_bit());
-        let rb = &DP.0.GPIOI;
-        rb.moder.modify(|_, w| w.moder8().output());
-        rb.ospeedr.modify(|_, w| w.ospeedr8().low_speed());
-        rb.pupdr.modify(|_, w| w.pupdr8().pull_up());
-        rb.bsrr.write(|w| w.br8().set_bit());
+        // let rcc = &DP.0.RCC;
+        // rcc.ahb1enr.modify(|_, w| w.gpioien().set_bit());
+        // let rb = &DP.0.GPIOI;
+        // rb.moder.modify(|_, w| w.moder8().output());
+        // rb.ospeedr.modify(|_, w| w.ospeedr8().low_speed());
+        // rb.pupdr.modify(|_, w| w.pupdr8().pull_up());
+        // rb.bsrr.write(|w| w.br8().set_bit());
+        println!("init");
         Ok(())
     }
 
     fn on(&self) -> Result<(), LedError> {
-        let rb = &DP.0.GPIOI;
-        rb.bsrr.write(|w| w.br8().set_bit());
+        // let rb = &DP.0.GPIOI;
+        // rb.bsrr.write(|w| w.br8().set_bit());
+        println!("on");
         self.0.borrow_mut().state = BspLedState::On;
         Ok(())
     }
 
     fn off(&self) -> Result<(), LedError> {
-        let rb = &DP.0.GPIOI;
-        rb.bsrr.write(|w| w.br8().set_bit());
+        // let rb = &DP.0.GPIOI;
+        // rb.bsrr.write(|w| w.br8().set_bit());
+        println!("off");
         self.0.borrow_mut().state = BspLedState::Off;
         Ok(())
     }
@@ -58,10 +61,11 @@ impl DeviceLed for BspLed {
     }
 
     fn uninit(&self) -> Result<(), LedError> {
-        let rb = &DP.0.GPIOI;
-        rb.moder.modify(|_, w| w.moder8().input());
-        rb.ospeedr.modify(|_, w| w.ospeedr8().low_speed());
-        rb.pupdr.modify(|_, w| w.pupdr8().floating());
+        // let rb = &DP.0.GPIOI;
+        // rb.moder.modify(|_, w| w.moder8().input());
+        // rb.ospeedr.modify(|_, w| w.ospeedr8().low_speed());
+        // rb.pupdr.modify(|_, w| w.pupdr8().floating());
+        println!("uninit");
         Ok(())
     }
 }
