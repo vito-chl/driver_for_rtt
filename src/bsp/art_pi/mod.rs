@@ -6,7 +6,7 @@ mod led;
 use crate::dev_init;
 use crate::device::register_device;
 use lazy_static::lazy_static;
-use rtt_rs::log;
+use rtt_rs::println;
 use stm32f7::stm32f750 as hal;
 
 lazy_static! {
@@ -21,10 +21,10 @@ struct PH(hal::Peripherals);
 
 dev_init!(init);
 pub fn init() {
-    log!("Device Init start!!!");
+    println!("Device Init start!!!");
 
-    log!("Register LED");
+    println!("Register LED");
     use crate::device::led::Led;
     register_device(Led::new(led::BspLed::new()), "led0").unwrap();
-    log!("Register LED finished");
+    println!("Register LED finished");
 }
