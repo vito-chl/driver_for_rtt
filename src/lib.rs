@@ -31,18 +31,14 @@ pub use error::*;
 pub(crate) extern crate alloc;
 pub(crate) extern crate rtt_rs;
 
-use rtt_rs::dbg;
-
 lazy_static! {
     pub static ref DEVICE_LIST: Mutex<BTreeMap<String, Arc<Mutex<Driver>>>> = {
-        dbg!("device list init!");
         Mutex::new(BTreeMap::new()).unwrap()
     };
 }
 
 lazy_static! {
     pub static ref FAST_DEVICE_LIST: Mutex<BTreeMap<String, Box<dyn Any + Send>>> = {
-        dbg!("fast device list init!");
         Mutex::new(BTreeMap::new()).unwrap()
     };
 }
