@@ -7,7 +7,7 @@ use crate::dev_init;
 use crate::device::register_device;
 use lazy_static::lazy_static;
 use rtt_rs::println;
-use stm32f7::stm32f750 as hal;
+use stm32h7::stm32h743v as hal;
 
 lazy_static! {
     static ref DP: PH = PH {
