@@ -53,8 +53,7 @@ impl<T: DeviceSerialSimple> DeviceOps for SerialSimple<T> {
                 StdData::U8(a) => {
                     (*hp.w_buffer.get()).force_push(a as _);
                 }
-                StdData::Type(_) => {}
-                StdData::Null => {}
+                _ => {}
             });
         }
         Ok(())

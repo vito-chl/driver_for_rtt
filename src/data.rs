@@ -6,6 +6,7 @@ pub enum StdData {
     Bytes(Vec<u8>),
     U32(u32),
     U8(u8),
+    OpenFlag(OpenFlag),
     Type(Box<dyn Any>),
     Null,
 }
@@ -68,6 +69,12 @@ impl ToMakeStdData for u8 {
     }
 }
 
+impl ToMakeStdData for OpenFlag {
+    fn make_data(&self) -> StdData {
+        StdData::OpenFlag(self.clone())
+    }
+}
+
 impl ToMakeStdData for &str {
     fn make_data(&self) -> StdData {
         let mut a = Vec::new();
@@ -81,9 +88,22 @@ impl ToMakeStdData for &str {
 use crate::alloc::boxed::Box;
 use core::any::Any;
 use paste::paste;
+use alloc::fmt::{Formatter, Display, Debug};
 
 #[derive(Copy, Clone)]
 pub struct OpenFlag(u32);
+
+impl Debug for OpenFlag {
+    fn fmt(&self, f: &mut Formatter<'_>) -> alloc::fmt::Result {
+        todo!()
+    }
+}
+
+impl Display for OpenFlag {
+    fn fmt(&self, f: &mut Formatter<'_>) -> alloc::fmt::Result {
+        todo!()
+    }
+}
 
 macro_rules! flag {
     ($flag: expr, $name: ident) => {
