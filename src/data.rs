@@ -78,7 +78,6 @@ impl ToMakeStdData for &str {
     }
 }
 
-
 use crate::alloc::boxed::Box;
 use core::any::Any;
 use paste::paste;
