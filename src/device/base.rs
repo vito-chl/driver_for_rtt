@@ -164,10 +164,10 @@ impl<T: Clone> DynCycleQueue<T> {
         let pop;
         if self.full() {
             pop = self.pop().unwrap();
-            self.push(val).unwrap_err();
+            let _ = self.push(val);
             Some(pop)
         } else {
-            self.push(val).unwrap_err();
+            let _ = self.push(val);
             None
         }
     }
