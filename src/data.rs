@@ -78,6 +78,16 @@ impl ToMakeStdData for &str {
     }
 }
 
+impl ToMakeStdData for str {
+    fn make_data(&self) -> StdData {
+        let mut a = Vec::new();
+        for i in self.bytes() {
+            a.push(i)
+        }
+        StdData::Bytes(a)
+    }
+}
+
 use crate::alloc::boxed::Box;
 use core::any::Any;
 use paste::paste;
