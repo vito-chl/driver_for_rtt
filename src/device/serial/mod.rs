@@ -129,10 +129,10 @@ where
     T: DeviceSerial,
 {
     fn open(&self, flag: &OpenFlag) -> Result<(), IOError> {
+        self.dev.init(flag)?;
         if flag.get_read_int() || flag.get_read_async() {
             self.dev.rx_irq_en(true);
         }
-        self.dev.init(flag)?;
         self.flag.set(Some((*flag).clone()));
         Ok(())
     }

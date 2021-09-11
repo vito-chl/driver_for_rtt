@@ -213,7 +213,9 @@ pub extern "C" fn USART1_IRQHandler() {
             }
         }
         if ut.isr.read().txe().bit_is_set() {
-            bsp::irq_send_char(dev);
+            if flag.get_write_int() {
+                bsp::irq_send_char(dev);
+            }
         }
         crate::rt_interrupt_leave();
     }
