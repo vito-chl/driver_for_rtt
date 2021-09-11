@@ -38,6 +38,10 @@ impl<'c> DriverOps for DriverGuard<'c> {
         todo!()
     }
 
+    fn chf(&self, _data: StdData) -> Result<StdData, IOError> {
+        todo!()
+    }
+
     fn async_read(&self, address: usize, len: u32) -> Result<AsyncReadFuture, IOError> {
         let dev = self.raw.lock().unwrap();
         if dev.open_able {

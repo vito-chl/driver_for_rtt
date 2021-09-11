@@ -22,6 +22,7 @@ pub trait DriverOps {
     fn write(&self, address: usize, data: &dyn ToMakeStdData) -> Result<(), IOError>;
     // 进行同步，将没有写的写出去
     fn sync(&self);
+    fn chf(&self, data: StdData) -> Result<StdData, IOError>;
     fn async_read(&self, address: usize, len: u32) -> Result<AsyncReadFuture, IOError>;
     fn async_write<'a, 'b>(
         &'a self,

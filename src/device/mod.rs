@@ -57,6 +57,10 @@ pub trait DeviceOps {
     // 进行同步操作
     fn sync(&self) {}
 
+    fn chf(&self, _data: StdData) -> Result<StdData, IOError> {
+        todo!()
+    }
+
     // 还有一些支持C接口注册的函数待完成
 
     // for async, 非必须实现

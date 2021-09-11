@@ -194,6 +194,10 @@ impl DeviceSerial for BspUart {
     fn bit_order(&self, _val: SerialBitOrder) {
         todo!()
     }
+
+    fn update_flags(&self, _f: OpenFlag) -> OpenFlag {
+        todo!()
+    }
 }
 
 #[no_mangle]

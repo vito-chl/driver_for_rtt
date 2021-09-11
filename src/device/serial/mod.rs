@@ -107,6 +107,7 @@ pub trait DeviceSerial {
     fn data_bits(&self, val: SerialDataBits);
     fn parity(&self, val: SerialParity);
     fn bit_order(&self, val: SerialBitOrder);
+    fn update_flags(&self, f: OpenFlag) -> OpenFlag;
 }
 
 pub struct Serial<T: DeviceSerial> {
