@@ -56,6 +56,18 @@ pub trait ToMakeStdData {
     fn make_data(&self) -> StdData;
 }
 
+impl ToMakeStdData for u32 {
+    fn make_data(&self) -> StdData {
+        StdData::U32(self.clone())
+    }
+}
+
+impl ToMakeStdData for u8 {
+    fn make_data(&self) -> StdData {
+        StdData::U8(self.clone())
+    }
+}
+
 use crate::alloc::boxed::Box;
 use core::any::Any;
 use paste::paste;
@@ -84,7 +96,7 @@ macro_rules! flag {
 
 //  打开标志的设置函数
 impl OpenFlag {
-    pub fn zero() -> Self {
+    pub const fn zero() -> Self {
         OpenFlag(0)
     }
 
@@ -113,4 +125,7 @@ impl OpenFlag {
     flag!(6, write_block);
 
     flag!(7, read_c_type);
+
+    flag!(8, read_async);
+    flag!(9, write_async);
 }

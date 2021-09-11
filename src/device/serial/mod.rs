@@ -1,18 +1,15 @@
-#![allow(dead_code)]
-
 pub(crate) mod bsp;
 
-use crate::alloc::boxed::Box;
-use crate::device::serial::bsp::{BspAsyncSerial, BspSerial};
 use crate::device::DeviceOps;
-use crate::IOError::WriteFull;
-use crate::{IOError, OpenFlag, StdData, ToMakeStdData};
+use crate::{IOError, IOError::WriteFull};
+use crate::{OpenFlag, StdData, ToMakeStdData};
+use alloc::boxed::Box;
 use alloc::collections::{LinkedList, VecDeque};
 use alloc::vec::Vec;
+use bsp::{BspAsyncSerial, BspSerial};
 use core::cell::Cell;
-use core::ops::Deref;
 use core::task::Waker;
-use rtt_rs::raw_api::{no_irq, rt_hw_interrupt_disable, rt_hw_interrupt_enable};
+use rtt_rs::raw_api::no_irq;
 
 #[allow(dead_code)]
 #[derive(Debug)]
@@ -30,15 +27,59 @@ impl From<SerialError> for IOError {
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialOrd, PartialEq)]
 pub enum SerialBaudRate {
-    B9600 = 9066,
+    B2400 = 2400,
+    B4800 = 4800,
+    B9600 = 9600,
+    B19200 = 19200,
+    B38400 = 38400,
+    B57600 = 57600,
     B115200 = 115200,
+    B230400 = 230400,
+    B460800 = 460800,
+    B921600 = 921600,
+    B2000000 = 2000000,
+    B3000000 = 3000000,
+}
+
+#[derive(Copy, Clone, PartialOrd, PartialEq)]
+pub enum SerialDataBits {
+    B5 = 5,
+    B6,
+    B7,
+    B8,
+    B9,
+}
+
+#[derive(Copy, Clone, PartialOrd, PartialEq)]
+pub enum SerialStopBits {
+    B1 = 1,
+    B2,
+    B3,
+    B4,
+}
+
+#[derive(Copy, Clone, PartialEq)]
+pub enum SerialParity {
+    NONE,
+    ODD,
+    EVEN,
+}
+
+#[derive(Copy, Clone, PartialEq)]
+pub enum SerialBitOrder {
+    MSB,
+    LSB,
 }
 
 #[derive(Copy, Clone)]
 pub enum SerialConfig {
     Baud(SerialBaudRate),
+    DataBits(SerialDataBits),
+    StopBits(SerialStopBits),
+    Parity(SerialParity),
+    BitOrder(SerialBitOrder),
     WBufSize(u32),
     RBufSize(u32),
 }
@@ -49,36 +90,23 @@ impl ToMakeStdData for SerialConfig {
     }
 }
 
-impl ToMakeStdData for u32 {
-    fn make_data(&self) -> StdData {
-        StdData::U32(self.clone())
-    }
-}
-
 pub trait DeviceSerial {
     fn init(&self, f: &OpenFlag) -> Result<(), SerialError>;
     fn uninit(&self) -> Result<(), SerialError>;
-
-    // helper是串口通用层提供的数据和函数，
-    // 具体的串口设备需要包含helper相关的结构
-    // 此函数的目的即返回所包含的helper的引用
     fn get_helper(&self) -> &BspSerial;
-
-    // 读一个字节
     fn read_char(&self) -> Result<u8, SerialError>;
-    // 判断是否可读
     fn read_able(&self) -> bool;
-
-    // 尝试写一个字节
     fn write_char(&self, val: u8) -> Result<(), SerialError>;
-    // 判断当前是否可写
     fn write_able(&self) -> bool;
-    // 等待写完成
     fn write_finish(&self) -> bool;
-
+    fn rx_irq_en(&self, f: bool);
+    fn tx_irq_en(&self, f: bool);
     fn dma_write(&self, ptr: *const u8, len: usize);
-
     fn config_baud(&self, val: SerialBaudRate);
+    fn stop_bots(&self, val: SerialStopBits);
+    fn data_bits(&self, val: SerialDataBits);
+    fn parity(&self, val: SerialParity);
+    fn bit_order(&self, val: SerialBitOrder);
 }
 
 pub struct Serial<T: DeviceSerial> {
@@ -86,6 +114,7 @@ pub struct Serial<T: DeviceSerial> {
     flag: Cell<Option<OpenFlag>>,
 }
 
+#[allow(dead_code)]
 impl<T: DeviceSerial> Serial<T> {
     pub(crate) fn new(dev: T) -> Serial<T> {
         Serial {
@@ -95,28 +124,21 @@ impl<T: DeviceSerial> Serial<T> {
     }
 }
 
-impl<T> Deref for Serial<T>
-where
-    T: DeviceSerial,
-{
-    type Target = T;
-    fn deref(&self) -> &Self::Target {
-        &self.dev
-    }
-}
-
 impl<T> DeviceOps for Serial<T>
 where
     T: DeviceSerial,
 {
     fn open(&self, flag: &OpenFlag) -> Result<(), IOError> {
-        self.init(flag)?;
+        if flag.get_read_int() || flag.get_read_async() {
+            self.dev.rx_irq_en(true);
+        }
+        self.dev.init(flag)?;
         self.flag.set(Some((*flag).clone()));
         Ok(())
     }
 
     fn read(&self, len: u32) -> Result<StdData, IOError> {
-        if self.flag.get().unwrap().get_read_int() {
+        if self.flag.get().unwrap().get_read_int() || self.flag.get().unwrap().get_read_async() {
             Ok(no_irq(|| unsafe {
                 let buf = self.dev.get_helper().r_buffer.get();
                 match (*buf).pop() {
@@ -147,10 +169,12 @@ where
         }
     }
 
+    // support irq send, block send
     fn write(&self, data: &dyn ToMakeStdData) -> Result<(), IOError> {
         if self.flag.get().unwrap().get_write_block() {
             match data.make_data() {
                 StdData::Bytes(a) => {
+                    let mut ok = true;
                     for ch in a {
                         loop {
                             if self.dev.write_able() {
@@ -158,7 +182,14 @@ where
                             }
                             rtt_rs::thread::Thread::_yield();
                         }
-                        self.dev.write_char(ch).unwrap();
+                        if let Err(_) = self.dev.write_char(ch) {
+                            ok = false;
+                        }
+                    }
+                    if ok {
+                        Ok(())
+                    } else {
+                        Err(IOError::WriteError)
                     }
                 }
                 StdData::U32(b) => {
@@ -168,45 +199,44 @@ where
                         }
                         rtt_rs::thread::Thread::_yield();
                     }
-                    self.dev.write_char(b as u8).unwrap();
+                    self.dev.write_char(b as u8).map_err(|e| e.into())
                 }
                 _ => return Err(IOError::WriteError),
             }
-            Ok(())
         } else {
             return match data.make_data() {
-                StdData::Bytes(mut a) => {
-                    let mut ret = Ok(());
+                StdData::Bytes(a) => {
+                    let ret;
                     if a.is_empty() {
                         ret = Ok(())
                     } else {
                         let mut dq = VecDeque::from(a);
                         no_irq(|| unsafe {
                             let wb = self.dev.get_helper().w_buffer.get();
-                            if (*wb).empty() {
-                                while !self.dev.read_able().unwrap() {}
-                                self.dev.write_char(dq.pop_front().unwrap());
-                            }
                             for ch in 0..(*wb).free_len() {
-                                if let Some(ch) = a.pop_front() {
+                                if let Some(ch) = dq.pop_front() {
                                     (*wb).force_push(ch);
                                 } else {
                                     break;
                                 }
                             }
+                            self.dev.tx_irq_en(true);
                         });
-                        if !a.is_empty() {
+                        if !dq.is_empty() {
                             ret = Err(WriteFull(StdData::Bytes(Vec::from(dq))));
                         } else {
                             ret = Ok(())
                         }
                     }
                     ret
-                },
-                StdData::U32(b) => no_irq(|| unsafe {
-                    while !self.dev.read_able().unwrap() {}
-                    self.dev.write_char(first_char);
-                    Ok(())
+                }
+                StdData::U32(b) => no_irq(|| {
+                    while !self.dev.read_able() {}
+                    self.dev.write_char(b as _).map_err(|e| e.into())
+                }),
+                StdData::U8(b) => no_irq(|| {
+                    while !self.dev.read_able() {}
+                    self.dev.write_char(b).map_err(|e| e.into())
                 }),
                 _ => Err(IOError::WriteError),
             };
@@ -214,7 +244,7 @@ where
     }
 
     fn close(&self) -> Result<(), IOError> {
-        self.dev.uninit().unwrap();
+        self.dev.uninit()?;
         self.flag.set(None);
         no_irq(|| unsafe {
             (*self.dev.get_helper().r_buffer.get()).clean();
@@ -224,7 +254,6 @@ where
         Ok(())
     }
 
-    //  用来配置波特率等信息
     fn control(&self, data: &dyn ToMakeStdData) -> Result<(), IOError> {
         let cfg = data.make_data();
         match cfg {
@@ -240,20 +269,19 @@ where
                         SerialConfig::WBufSize(a) => {
                             let hp = &self.dev.get_helper().w_buffer;
                             let wb = hp.get();
-                            unsafe {
-                                let level = rt_hw_interrupt_disable();
+                            no_irq(|| unsafe {
                                 (*wb).resize(a as usize);
-                                rt_hw_interrupt_enable(level);
-                            }
+                            });
                         }
                         SerialConfig::RBufSize(a) => {
                             let hp = &self.dev.get_helper().r_buffer;
                             let wb = hp.get();
-                            unsafe {
-                                let level = rt_hw_interrupt_disable();
+                            no_irq(|| unsafe {
                                 (*wb).resize(a as usize);
-                                rt_hw_interrupt_enable(level);
-                            }
+                            });
+                        }
+                        _ => {
+                            // TODO
                         }
                     }
                     Ok(())
@@ -265,32 +293,24 @@ where
 
     fn sync(&self) {
         loop {
-            unsafe {
-                let mut end = false;
-                let level = rt_hw_interrupt_disable();
+            let mut end = false;
+            no_irq(|| unsafe {
                 let bf = self.dev.get_helper().w_buffer.get();
                 if (*bf).empty() {
                     end = true;
                 }
-                rt_hw_interrupt_enable(level);
-
-                if end {
-                    break;
-                } else {
-                    rtt_rs::thread::Thread::delay(1);
-                }
+            });
+            if end {
+                break;
+            } else {
+                rtt_rs::thread::Thread::delay(1);
             }
         }
     }
 
     fn register_read_callback(&self, func: fn(Waker), cx: Waker) -> Result<(), IOError> {
-        let level;
-        unsafe {
-            level = rt_hw_interrupt_disable();
-        }
-        // 防止中断意外响应
-        let helper = self.get_helper().read_async_helper.get();
-        unsafe {
+        no_irq(|| unsafe {
+            let helper = self.dev.get_helper().read_async_helper.get();
             match *helper {
                 None => {
                     *helper = Some(BspAsyncSerial {
@@ -304,21 +324,17 @@ where
                 }
                 Some(ref mut a) => a.async_wakers.push_back(cx),
             }
-        }
-        unsafe { rt_hw_interrupt_enable(level) };
+        });
         Ok(())
     }
 
     fn register_rx_indicate(&self, func: fn()) {
-        let level;
-        unsafe {
-            level = rt_hw_interrupt_disable();
+        if !self.flag.get().unwrap().get_read_c_type() {
+            return;
         }
-        // 防止中断意外响应
-        let f = self.get_helper().rx_indicate.get();
-        unsafe {
+        no_irq(|| unsafe {
+            let f = self.dev.get_helper().rx_indicate.get();
             (*f) = Some(func);
-        }
-        unsafe { rt_hw_interrupt_enable(level) };
+        });
     }
 }

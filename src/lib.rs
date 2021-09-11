@@ -32,15 +32,13 @@ pub(crate) extern crate alloc;
 pub(crate) extern crate rtt_rs;
 
 lazy_static! {
-    pub static ref DEVICE_LIST: Mutex<BTreeMap<String, Arc<Mutex<Driver>>>> = {
-        Mutex::new(BTreeMap::new()).unwrap()
-    };
+    pub static ref DEVICE_LIST: Mutex<BTreeMap<String, Arc<Mutex<Driver>>>> =
+        Mutex::new(BTreeMap::new()).unwrap();
 }
 
 lazy_static! {
-    pub static ref FAST_DEVICE_LIST: Mutex<BTreeMap<String, Box<dyn Any + Send>>> = {
-        Mutex::new(BTreeMap::new()).unwrap()
-    };
+    pub static ref FAST_DEVICE_LIST: Mutex<BTreeMap<String, Box<dyn Any + Send>>> =
+        Mutex::new(BTreeMap::new()).unwrap();
 }
 
 #[macro_export]
