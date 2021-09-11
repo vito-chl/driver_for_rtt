@@ -21,7 +21,7 @@ pub(crate) fn irq_receive_char<T: DeviceSerial>(dev: *mut T, ch: u8) {
     unsafe {
         let hp = (*dev).get_helper();
         let chs = hp.r_buffer.get();
-        (*chs).force_push(ch).unwrap();
+        let _ = (*chs).force_push(ch);
     }
 }
 
