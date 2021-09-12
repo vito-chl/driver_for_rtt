@@ -108,3 +108,10 @@ impl Drop for DriverGuard<'_> {
         }
     }
 }
+
+#[macro_export]
+macro_rules! write {
+    ($dev:tt, $($data:expr),*) => {
+        $($dev.write(0, &($data)).unwrap();)*
+    }
+}
