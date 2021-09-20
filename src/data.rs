@@ -94,13 +94,13 @@ use alloc::fmt::{Formatter, Display, Debug};
 pub struct OpenFlag(u32);
 
 impl Debug for OpenFlag {
-    fn fmt(&self, f: &mut Formatter<'_>) -> alloc::fmt::Result {
+    fn fmt(&self, _f: &mut Formatter<'_>) -> alloc::fmt::Result {
         todo!()
     }
 }
 
 impl Display for OpenFlag {
-    fn fmt(&self, f: &mut Formatter<'_>) -> alloc::fmt::Result {
+    fn fmt(&self, _f: &mut Formatter<'_>) -> alloc::fmt::Result {
         todo!()
     }
 }

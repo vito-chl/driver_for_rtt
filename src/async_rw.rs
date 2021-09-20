@@ -4,7 +4,8 @@ use crate::error::IOError;
 use crate::guard::DriverGuard;
 use core::future::Future;
 use core::pin::Pin;
-use core::task::{Context, Poll, Waker};
+use core::task::{Context, Poll};
+use rtt_rs::embassy_async::executor::device_wake;
 
 pub struct AsyncReadFuture<'a, 'c>(
     pub(crate) &'a DriverGuard<'c>,
@@ -17,11 +18,6 @@ pub struct AsyncWriteFuture<'a, 'b, 'c>(
     pub(crate) &'b dyn ToMakeStdData,
 );
 
-// 需要转移所有权
-fn wake_me(c: Waker) {
-    c.wake()
-}
-
 impl<'a, 'c> Future for AsyncReadFuture<'a, 'c> {
     type Output = Result<StdData, IOError>;
 
@@ -31,7 +27,7 @@ impl<'a, 'c> Future for AsyncReadFuture<'a, 'c> {
                 StdData::Null => {
                     self.0
                         .raw
-                        .register_read_callback(wake_me, cx.waker().clone())
+                        .register_read_callback(device_wake, cx.waker().clone())
                         .unwrap();
                     Poll::Pending
                 }
@@ -52,7 +48,7 @@ impl<'a, 'b, 'c> Future for AsyncWriteFuture<'a, 'b, 'c> {
                 IOError::WriteBusy => {
                     self.0
                         .raw
-                        .register_write_callback(wake_me, cx.waker().clone())
+                        .register_write_callback(device_wake, cx.waker().clone())
                         .unwrap();
                     Poll::Pending
                 }
