@@ -35,7 +35,9 @@ pub(crate) fn notify_form_irq<T: DeviceSerial>(dev: *mut T) {
             Some(ref mut hp) => {
                 let waker = hp.async_wakers.pop_front();
                 match waker {
-                    None => {}
+                    None => {
+                        rtt_rs::println!("No waker");
+                    }
                     Some(a) => (hp.async_notify)(a),
                 }
             }

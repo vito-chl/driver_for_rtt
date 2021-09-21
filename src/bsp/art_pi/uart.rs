@@ -213,6 +213,7 @@ pub extern "C" fn USART1_IRQHandler() {
             if flag.get_read_c_type() {
                 bsp::call_rx_indicate(dev);
             } else if flag.get_read_async() {
+                rtt_rs::println!("Info");
                 bsp::notify_form_irq(dev);
             }
         }
