@@ -204,7 +204,8 @@ impl DeviceSerial for BspUart {
 #[no_mangle]
 pub extern "C" fn USART1_IRQHandler() {
     unsafe {
-        crate::rt_interrupt_enter();
+        rtt_rs::println!("yy");
+        //crate::rt_interrupt_enter();
         let ut = &DP.0.USART1;
         let dev = UART_DEV_PTR[1] as *const BspUart as *mut BspUart;
         let flag = UART_FLAG[1];
@@ -214,6 +215,7 @@ pub extern "C" fn USART1_IRQHandler() {
             if flag.get_read_c_type() {
                 bsp::call_rx_indicate(dev);
             } else if flag.get_read_async() {
+                rtt_rs::println!("xx");
                 bsp::notify_form_irq(dev);
             }
         }
@@ -222,6 +224,6 @@ pub extern "C" fn USART1_IRQHandler() {
                 bsp::irq_send_char(dev);
             }
         }
-        crate::rt_interrupt_leave();
+        //crate::rt_interrupt_leave();
     }
 }
