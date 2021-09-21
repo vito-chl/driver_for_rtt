@@ -25,10 +25,20 @@ pub trait DevOpen {
     fn open(&self, f: &OpenFlag) -> Result<DriverGuard, IOError>;
 }
 
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum OpenType {
+    Master,
+    Only,
+    User,
+}
+
 impl DevOpen for Arc<Mutex<Driver>> {
     fn open(&self, f: &OpenFlag) -> Result<DriverGuard, IOError> {
-        raw_open(self, f)?;
-        Ok(DriverGuard { raw: self })
+        let ot = raw_open(self, f)?;
+        Ok(DriverGuard {
+            raw: self,
+            o_type: ot,
+        })
     }
 }
 
@@ -68,7 +78,7 @@ pub fn release_fast_dev<T: Send + 'static>(dev: FastDev<T>) {
     register_fast_device(raw_dev, &raw_name).unwrap();
 }
 
-pub fn raw_open(dev: &Arc<Mutex<Driver>>, f: &OpenFlag) -> Result<(), IOError> {
+pub fn raw_open(dev: &Arc<Mutex<Driver>>, f: &OpenFlag) -> Result<OpenType, IOError> {
     let mut inner_dev = dev.lock().unwrap();
 
     return if f.get_only() {
@@ -84,7 +94,7 @@ pub fn raw_open(dev: &Arc<Mutex<Driver>>, f: &OpenFlag) -> Result<(), IOError> {
                 inner_dev.open_able = true;
                 e
             })?;
-            Ok(())
+            Ok(OpenType::Only)
         }
     } else {
         if !(inner_dev.open_able) {
@@ -97,11 +107,11 @@ pub fn raw_open(dev: &Arc<Mutex<Driver>>, f: &OpenFlag) -> Result<(), IOError> {
                 inner_dev.open_num = 0;
                 e
             })?;
-            Ok(())
+            Ok(OpenType::Master)
         } else {
             // 已经执行过打开函数，不需要再次执行
             inner_dev.open_num += 1;
-            Ok(())
+            Ok(OpenType::User)
         }
     };
 }

@@ -1,4 +1,5 @@
 use crate::alloc::sync::Arc;
+use crate::api::OpenType;
 use crate::async_rw::{AsyncReadFuture, AsyncWriteFuture};
 use crate::data::{StdData, ToMakeStdData};
 use crate::driver::{Driver, DriverAsyncHelper, DriverOps};
@@ -8,6 +9,7 @@ use core::task::Waker;
 
 pub struct DriverGuard<'a> {
     pub(crate) raw: &'a Arc<Mutex<Driver>>,
+    pub(crate) o_type: OpenType,
 }
 
 impl<'c> DriverOps for DriverGuard<'c> {
@@ -42,9 +44,30 @@ impl<'c> DriverOps for DriverGuard<'c> {
         todo!()
     }
 
+    fn is_only(&self) -> bool {
+        match self.o_type {
+            OpenType::Only => true,
+            _ => false,
+        }
+    }
+
+    fn is_master(&self) -> bool {
+        match self.o_type {
+            OpenType::Master => true,
+            _ => false,
+        }
+    }
+
+    fn is_user(&self) -> bool {
+        match self.o_type {
+            OpenType::User => true,
+            _ => false,
+        }
+    }
+
     fn async_read(&self, address: usize, len: u32) -> Result<AsyncReadFuture, IOError> {
         let dev = self.raw.lock().unwrap();
-        if dev.open_able {
+        if !dev.open_able {
             Err(IOError::ReadError)
         } else {
             Ok(AsyncReadFuture {
@@ -61,7 +84,7 @@ impl<'c> DriverOps for DriverGuard<'c> {
         data: &'b dyn ToMakeStdData,
     ) -> Result<AsyncWriteFuture<'a, 'b, 'c>, IOError> {
         let dev = self.raw.lock().unwrap();
-        if dev.open_able {
+        if !dev.open_able {
             Err(IOError::ReadError)
         } else {
             Ok(AsyncWriteFuture {

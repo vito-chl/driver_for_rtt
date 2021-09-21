@@ -86,9 +86,9 @@ impl ToMakeStdData for &str {
 }
 
 use crate::alloc::boxed::Box;
+use alloc::fmt::{Debug, Display, Formatter};
 use core::any::Any;
 use paste::paste;
-use alloc::fmt::{Formatter, Display, Debug};
 
 #[derive(Copy, Clone)]
 pub struct OpenFlag(u32);
