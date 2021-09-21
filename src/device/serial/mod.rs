@@ -310,7 +310,6 @@ where
     }
 
     fn register_read_callback(&self, _func: fn(Waker), cx: Waker) -> Result<(), IOError> {
-        rtt_rs::println!("call back");
         no_irq(|| {
             let helper = self.dev.get_helper().read_async_helper.register(&cx);
         });
