@@ -29,7 +29,9 @@ pub(crate) fn notify_form_irq<T: DeviceSerial>(dev: *mut T) {
     unsafe {
         let helper = (*dev).get_helper().read_async_helper.get();
         match *helper {
-            None => {}
+            None => {
+                panic!()
+            }
             Some(ref mut hp) => {
                 let waker = hp.async_wakers.pop_front();
                 match waker {
