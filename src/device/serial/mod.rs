@@ -4,9 +4,9 @@ use crate::device::DeviceOps;
 use crate::{IOError, IOError::WriteFull};
 use crate::{OpenFlag, StdData, ToMakeStdData};
 use alloc::boxed::Box;
-use alloc::collections::{LinkedList, VecDeque};
+use alloc::collections::VecDeque;
 use alloc::vec::Vec;
-use bsp::{BspAsyncSerial, BspSerial};
+use bsp::BspSerial;
 use core::cell::Cell;
 use core::task::Waker;
 use rtt_rs::raw_api::no_irq;
@@ -250,7 +250,7 @@ where
         no_irq(|| unsafe {
             (*self.dev.get_helper().r_buffer.get()).clean();
             (*self.dev.get_helper().w_buffer.get()).clean();
-            (*self.dev.get_helper().read_async_helper.get()) = None;
+            self.dev.get_helper().read_async_helper.destroy();
         });
         Ok(())
     }
@@ -309,22 +309,9 @@ where
         }
     }
 
-    fn register_read_callback(&self, func: fn(Waker), cx: Waker) -> Result<(), IOError> {
-        no_irq(|| unsafe {
-            let helper = self.dev.get_helper().read_async_helper.get();
-            match *helper {
-                None => {
-                    *helper = Some(BspAsyncSerial {
-                        async_wakers: {
-                            let mut list = LinkedList::new();
-                            list.push_back(cx);
-                            list
-                        },
-                        async_notify: func,
-                    });
-                }
-                Some(ref mut a) => a.async_wakers.push_back(cx),
-            }
+    fn register_read_callback(&self, _func: fn(Waker), cx: Waker) -> Result<(), IOError> {
+        no_irq(|| {
+            let helper = self.dev.get_helper().read_async_helper.register(&cx);
         });
         Ok(())
     }

@@ -71,6 +71,7 @@ pub trait DeviceOps {
     // Waker通知之前会先检查线程是否中止
     // 只要线程没被中止，异步运行时即存在，
     // 且对应协程正在被阻塞，即可进行异步的通知
+    // TODO: remove func
     fn register_read_callback(&self, func: fn(Waker), cx: Waker) -> Result<(), IOError> {
         Ok(())
     }

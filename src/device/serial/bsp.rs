@@ -1,16 +1,10 @@
-use crate::alloc::collections::LinkedList;
 use crate::device::base::DynCycleQueue;
 use crate::device::serial::DeviceSerial;
 use core::cell::UnsafeCell;
-use core::task::Waker;
-
-pub struct BspAsyncSerial {
-    pub(crate) async_wakers: LinkedList<Waker>,
-    pub(crate) async_notify: fn(Waker),
-}
+use rtt_rs::embassy_async::waitqueue::AtomicWaker;
 
 pub struct BspSerial {
-    pub(crate) read_async_helper: UnsafeCell<Option<BspAsyncSerial>>,
+    pub(crate) read_async_helper: AtomicWaker,
     pub(crate) r_buffer: UnsafeCell<DynCycleQueue<u8>>,
     pub(crate) w_buffer: UnsafeCell<DynCycleQueue<u8>>,
     // for c type
@@ -27,21 +21,7 @@ pub(crate) fn irq_receive_char<T: DeviceSerial>(dev: *mut T, ch: u8) {
 
 pub(crate) fn notify_form_irq<T: DeviceSerial>(dev: *mut T) {
     unsafe {
-        let helper = (*dev).get_helper().read_async_helper.get();
-        match *helper {
-            None => {
-                panic!()
-            }
-            Some(ref mut hp) => {
-                let waker = hp.async_wakers.pop_front();
-                match waker {
-                    None => {
-                        rtt_rs::println!("No waker");
-                    }
-                    Some(a) => (hp.async_notify)(a),
-                }
-            }
-        }
+        (*dev).get_helper().read_async_helper.wake();
     }
 }
 

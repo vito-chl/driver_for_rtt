@@ -9,6 +9,7 @@ use crate::rtt_rs::raw_api::no_irq;
 use crate::OpenFlag;
 use core::cell::{Cell, UnsafeCell};
 use core::task::Waker;
+use rtt_rs::embassy_async::waitqueue::AtomicWaker;
 
 static mut UART_DEV_PTR: [usize; 8] = [0 as _; 8];
 static mut UART_FLAG: [OpenFlag; 8] = [OpenFlag::zero(); 8];
@@ -28,7 +29,7 @@ impl BspUart {
         BspUart {
             num,
             hp: BspSerial {
-                read_async_helper: UnsafeCell::new(None),
+                read_async_helper: AtomicWaker::new(),
                 r_buffer: UnsafeCell::new(DynCycleQueue::new(256)),
                 w_buffer: UnsafeCell::new(DynCycleQueue::new(256)),
                 rx_indicate: UnsafeCell::new(None),
