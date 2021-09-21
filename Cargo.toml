@@ -11,7 +11,7 @@ edition = "2018"
 #name = "driver_for_rtt"
 
 [dependencies]
-rtt_rs = {git = "https://github.com/vito-chl/rtt_rs.git", optional = true}
+rtt_rs = {git = "https://github.com/vito-chl/rtt_rs.git", branch = "dev",optional = true}
 lazy_static = { version = "1.4", features = ["spin_no_std"] }
 mlib = {git = "https://gitee.com/vitors/mlib.git", optional = true}
 paste = "1.0.4"

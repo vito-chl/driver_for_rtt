@@ -259,7 +259,7 @@ dependencies = [
 [[package]]
 name = "rtt_rs"
 version = "0.2.3"
-source = "git+https://github.com/vito-chl/rtt_rs.git#725753f88d43145c072fbce26930e47f968df6ce"
+source = "git+https://github.com/vito-chl/rtt_rs.git?branch=dev#f5d976e1d1f8a3a24ffa55b4d736ac46cdfd680a"
 dependencies = [
  "atomic-polyfill",
  "bitfield",
