@@ -69,6 +69,12 @@ impl ToMakeStdData for u8 {
     }
 }
 
+impl ToMakeStdData for Vec<u8> {
+    fn make_data(&self) -> StdData {
+        StdData::Bytes(self.clone())
+    }
+}
+
 impl ToMakeStdData for OpenFlag {
     fn make_data(&self) -> StdData {
         StdData::OpenFlag(self.clone())
@@ -158,4 +164,6 @@ impl OpenFlag {
 
     flag!(8, read_async);
     flag!(9, write_async);
+
+    flag!(10, c_open);
 }

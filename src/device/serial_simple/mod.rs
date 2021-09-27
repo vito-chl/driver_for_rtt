@@ -64,7 +64,7 @@ impl<T: DeviceSerialSimple> DeviceOps for SerialSimple<T> {
         Ok(())
     }
 
-    fn control(&self, data: &dyn ToMakeStdData) -> Result<(), IOError> {
+    fn control(&self, data: &dyn ToMakeStdData) -> Result<StdData, IOError> {
         unimplemented!()
     }
 }

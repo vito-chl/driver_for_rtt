@@ -6,6 +6,7 @@
 #![allow(dead_code)]
 
 pub mod bsp;
+use crate::alloc::boxed::Box;
 use crate::alloc::prelude::v1::Vec;
 use crate::device::spi_bus::bsp::BspBusSpi;
 use crate::device::spi_device::{SpiConfig, SpiError};
@@ -26,9 +27,9 @@ pub trait BusSpi {
     // 无参数初始化
     fn np_init(&self) -> Result<(), SpiError>;
     // 默认的CS引脚
-    fn cs(&self, f: bool) {
-        unimplemented!()
-    }
+    // fn cs(&self, f: bool) {
+    //     unimplemented!()
+    // }
     // 用来关闭总线设备
     fn uninit(&self) -> Result<(), SpiError>;
     // 使用总线发送数据
@@ -52,12 +53,13 @@ pub struct BusSpiHandler<T: BusSpi> {
     init: AtomicBool,
 }
 
-impl<T: BusSpi> BusSpiHandler<T> {
-    pub fn new(dev: T) -> BusSpiHandler<T> {
-        BusSpiHandler {
+impl<T: BusSpi + Send + 'static> BusSpiHandler<T> {
+    pub fn new(dev: T) -> Box<dyn BusSpiOps + Send + 'static> {
+        let b = BusSpiHandler {
             dev,
             init: AtomicBool::new(false),
-        }
+        };
+        Box::new(b)
     }
 }
 

@@ -156,7 +156,7 @@ impl<T: DeviceI2C> DeviceOps for I2CDev<T> {
     }
 
     // 设置地址和地址类型
-    fn control(&self, data: &dyn ToMakeStdData) -> Result<(), IOError> {
+    fn control(&self, data: &dyn ToMakeStdData) -> Result<StdData, IOError> {
         let a = data.make_data().take_type().unwrap();
         let b;
         if a.is::<I2CDevConfig>() {
@@ -167,6 +167,6 @@ impl<T: DeviceI2C> DeviceOps for I2CDev<T> {
 
         self.address_type.set(b.address_type);
         self.address.set(b.address);
-        Ok(())
+        Ok(StdData::Null)
     }
 }

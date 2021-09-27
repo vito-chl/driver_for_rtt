@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-mod bsp;
+pub mod bsp;
 
 use crate::alloc::prelude::v1::Vec;
 use crate::device::spi_device::bsp::BspSpiDev;
@@ -43,7 +43,7 @@ pub trait DeviceSpi {
     // fn trans_able(&self) -> bool;
     // fn dma_trans_bits(&self, data: SpiBits) -> Result<(), SpiError>;
 
-    fn get_helper(&self) -> BspSpiDev;
+    fn get_helper(&self) -> &BspSpiDev;
 }
 
 // 需要实现 DeviceOps

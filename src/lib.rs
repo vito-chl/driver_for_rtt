@@ -23,6 +23,7 @@ pub mod driver;
 pub mod error;
 mod fast_dev;
 pub mod guard;
+mod third_party;
 
 /* 导出的函数 */
 pub use data::*;

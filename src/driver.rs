@@ -17,7 +17,7 @@ pub struct Driver {
 }
 
 pub trait DriverOps {
-    fn control(&self, data: &dyn ToMakeStdData) -> Result<(), IOError>;
+    fn control(&self, data: &dyn ToMakeStdData) -> Result<StdData, IOError>;
     fn read(&self, address: usize, len: u32) -> Result<StdData, IOError>;
     fn write(&self, address: usize, data: &dyn ToMakeStdData) -> Result<(), IOError>;
     // 进行同步，将没有写的写出去

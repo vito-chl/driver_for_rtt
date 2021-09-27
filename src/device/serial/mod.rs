@@ -255,7 +255,7 @@ where
         Ok(())
     }
 
-    fn control(&self, data: &dyn ToMakeStdData) -> Result<(), IOError> {
+    fn control(&self, data: &dyn ToMakeStdData) -> Result<StdData, IOError> {
         let cfg = data.make_data();
         match cfg {
             StdData::Type(a) => {
@@ -285,7 +285,7 @@ where
                             // TODO
                         }
                     }
-                    Ok(())
+                    Ok(StdData::Null)
                 }
             }
             _ => Err(IOError::ControlError),

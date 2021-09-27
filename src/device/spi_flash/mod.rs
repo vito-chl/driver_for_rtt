@@ -1,21 +1,69 @@
 //! 后期需要把spi-flash库的代码直接移动到这里来
 //! 目前参数无法传递
 
+use crate::alloc::boxed::Box;
 use crate::alloc::prelude::v1::Vec;
 use crate::device::spi_device::DeviceSpi;
 use crate::device::DeviceOps;
+use crate::third_party::spi_flash::{self, Flash, FlashAccess};
 use crate::{IOError, OpenFlag, StdData, ToMakeStdData};
+use core::any::Any;
 use core::cell::UnsafeCell;
 use core::time::Duration;
-use spi_flash::{Flash, FlashAccess};
 
 pub struct SpiFlashAccess<T: DeviceSpi> {
     dev: T,
 }
 
+impl<T: DeviceSpi> SpiFlashAccess<T> {
+    pub fn new(dev: T) -> SpiFlashAccess<T> {
+        SpiFlashAccess{dev}
+    }
+}
+
 #[derive(Debug)]
 pub enum SpiFlashError {
     SomeError,
+}
+
+#[derive(Copy, Clone)]
+pub struct GetFlashInfo;
+
+impl ToMakeStdData for GetFlashInfo {
+    fn make_data(&self) -> StdData {
+        StdData::Type(Box::new(GetFlashInfo))
+    }
+}
+
+#[derive(Debug, Copy, Clone)]
+pub struct EraseFlash(u32);
+
+impl ToMakeStdData for EraseFlash {
+    fn make_data(&self) -> StdData {
+        StdData::Type(Box::new(EraseFlash))
+    }
+}
+
+#[derive(Debug, Copy, Clone)]
+pub struct SyncFlash;
+
+impl ToMakeStdData for SyncFlash {
+    fn make_data(&self) -> StdData {
+        StdData::Type(Box::new(SyncFlash))
+    }
+}
+
+#[derive(Debug, Copy, Clone)]
+pub struct FlashInfo {
+    pub sector_count: u32,
+    pub bytes_per_sector: u32,
+    pub block_size: u32,
+}
+
+impl ToMakeStdData for FlashInfo {
+    fn make_data(&self) -> StdData {
+        StdData::Type(Box::new(self.clone()))
+    }
 }
 
 impl From<SpiFlashError> for spi_flash::Error {
@@ -27,7 +75,7 @@ impl From<SpiFlashError> for spi_flash::Error {
 impl<T: DeviceSpi> FlashAccess for SpiFlashAccess<T> {
     type Error = SpiFlashError;
 
-    fn access_init(&self) -> Result<(), Self::Error> {
+    fn access_init(&self, _param: Box<dyn Any>) -> Result<(), Self::Error> {
         self.dev.np_init().unwrap();
         Ok(())
     }
@@ -52,6 +100,7 @@ impl<T: DeviceSpi> FlashAccess for SpiFlashAccess<T> {
 
     fn delay(&self, duration: Duration) {
         let ms = duration.as_micros();
+        // TODO
         rtt_rs::thread::Thread::delay(ms as _);
     }
 }
@@ -73,7 +122,7 @@ impl<T: DeviceSpi> DeviceOps for SpiFlash<T> {
         let flash;
         unsafe {
             flash = self.flash.get();
-            (*flash).access.access_init().unwrap();
+            (*flash).access.access_init(Box::new(flag.clone())).unwrap();
         }
         Ok(())
     }
@@ -87,8 +136,31 @@ impl<T: DeviceSpi> DeviceOps for SpiFlash<T> {
         Ok(())
     }
 
-    fn control(&self, data: &dyn ToMakeStdData) -> Result<(), IOError> {
-        Ok(())
+    fn control(&self, data: &dyn ToMakeStdData) -> Result<StdData, IOError> {
+        let data = data.make_data().take_type().unwrap();
+        let mut ret = StdData::Null;
+
+        if data.is::<GetFlashInfo>() {
+            let cmd = data.downcast::<GetFlashInfo>().unwrap();
+            unsafe {
+                let flash = &(*self.flash.get());
+                let p = flash.get_params().unwrap();
+
+                let info = FlashInfo {
+                    sector_count: (flash.capacity.unwrap() / flash.erase_size.unwrap()) as u32,
+                    bytes_per_sector: flash.erase_size.unwrap() as u32,
+                    // TODO
+                    block_size: (flash.erase_size.unwrap() * 16) as u32,
+                };
+                ret = StdData::Type(Box::new(info));
+            }
+        }
+
+        Ok(ret)
+    }
+
+    fn is_block_dev(&self) -> bool {
+        true
     }
 
     fn b_read(&self, address: usize, len: usize) -> Result<StdData, IOError> {

@@ -42,7 +42,7 @@ pub trait DeviceOps {
         }
     }
     fn close(&self) -> Result<(), IOError>;
-    fn control(&self, data: &dyn ToMakeStdData) -> Result<(), IOError>;
+    fn control(&self, data: &dyn ToMakeStdData) -> Result<StdData, IOError>;
 
     fn is_block_dev(&self) -> bool {
         false

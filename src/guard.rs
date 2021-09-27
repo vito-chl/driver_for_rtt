@@ -13,7 +13,7 @@ pub struct DriverGuard<'a> {
 }
 
 impl<'c> DriverOps for DriverGuard<'c> {
-    fn control(&self, data: &dyn ToMakeStdData) -> Result<(), IOError> {
+    fn control(&self, data: &dyn ToMakeStdData) -> Result<StdData, IOError> {
         let dev = self.raw.lock().unwrap();
         dev.ops.control(data)
     }
