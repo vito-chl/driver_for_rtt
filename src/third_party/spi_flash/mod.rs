@@ -315,6 +315,8 @@ where
             self.erase_size = Some(4096);
             self.erase_opcode = params.legacy_4kb_erase_inst;
         }
+        use rtt_rs::println;
+        println!("DEV: {:?}", params);
         Ok(Some(params))
     }
 
