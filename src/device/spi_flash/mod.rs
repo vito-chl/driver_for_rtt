@@ -121,10 +121,10 @@ impl<T: DeviceSpi> DeviceOps for SpiFlash<T> {
     fn open(&self, flag: &OpenFlag) -> Result<(), IOError> {
         let flash;
         unsafe {
-            flash = &(*self.flash.get());
+            flash = &mut (*self.flash.get());
             flash.access.access_init(Box::new(flag.clone())).unwrap();
         }
-        flash.get_params().unwrap();
+        flash.read_params().unwrap().unwrap();
         Ok(())
     }
 
