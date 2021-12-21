@@ -11,6 +11,9 @@ use core::cell::{Cell, UnsafeCell};
 use core::task::Waker;
 use rtt_rs::embassy_async::waitqueue::AtomicWaker;
 
+// Unsafe, But Mutex is alse Unsafe (Might sleep).
+// So need a new lock(spin_lock_no_irq).
+// Mutex should be re-design. It will panic in irq-handler.
 static mut UART_DEV_PTR: [usize; 8] = [0 as _; 8];
 static mut UART_FLAG: [OpenFlag; 8] = [OpenFlag::zero(); 8];
 
